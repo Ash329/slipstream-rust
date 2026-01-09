@@ -43,6 +43,12 @@ The runtime centers around a connection manager that owns QUIC state, timers, an
 per-connection queues. UDP receive/send and TCP accept/read/write are handled by
 separate tasks, with bounded channels used to limit memory growth under load.
 
+## Rust vs C behavior notes
+
+- The Rust client clamps active DNS polling sleeps to `DNS_POLL_SLICE_US` (50 ms),
+  even if picoquic suggests a longer wake delay. This may differ from the C
+  client's timing and can affect poll cadence under load.
+
 ## Safety and shutdown
 
 - CLI validation enforces required flags and valid host:port parsing.
