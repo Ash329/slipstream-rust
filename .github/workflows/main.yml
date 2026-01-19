@@ -10,8 +10,12 @@ jobs:
       - name: Install Rust
         run: rustup update stable
       - name: Build
-        run: cargo build -p slipstream-client --release
+        # This environment variable tells openssl-sys to build its own copy
+        env:
+          OPENSSL_STATIC: 1
+        run: cargo build -p slipstream-client --release --features openssl/vendored
       - name: Upload
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: slipstream-client-windows
