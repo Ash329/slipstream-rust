@@ -1,20 +1,29 @@
 name: Build Release
 on: workflow_dispatch
+
 jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
         with:
           submodules: recursive
+
       - name: Install Rust
         run: rustup update stable
-      - name: Build
-        # This environment variable tells openssl-sys to build its own copy
+
+      - name: Build slipstream-client
         env:
+          # Force a 100% 64-bit environment to kill Error 193
           OPENSSL_STATIC: 1
+          PICOQUIC_AUTO_BUILD: 1
+          CMAKE_GENERATOR: "Visual Studio 17 2022"
+          CMAKE_GENERATOR_PLATFORM: x64
+        # We use the vendored feature so it doesn't look for OpenSSL on the server
         run: cargo build -p slipstream-client --release --features openssl/vendored
-      - name: Upload
+
+      - name: Upload Windows Executable
         if: success()
         uses: actions/upload-artifact@v4
         with:
