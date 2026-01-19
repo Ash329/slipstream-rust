@@ -2,47 +2,40 @@ name: Build Release
 on: workflow_dispatch
 
 jobs:
-  build:
-    runs-on: windows-latest
+  build-linux:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           submodules: recursive
       
-      - name: Setup MSVC Developer Command Prompt
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake pkg-config libssl-dev
       
       - name: Install Rust
-        run: |
-          rustup update stable
-          rustup default stable-x86_64-pc-windows-msvc
-          rustup target add x86_64-pc-windows-msvc
+        uses: dtolnay/rust-toolchain@stable
       
-      - name: Install CMake and Ninja
-        run: |
-          choco install cmake ninja -y
-      
-      - name: Verify Environment
-        run: |
-          cmake --version
-          ninja --version
-          rustc --version --verbose
-          cargo --version
-        
       - name: Build slipstream-client
         env:
-          OPENSSL_STATIC: 1
           PICOQUIC_AUTO_BUILD: 1
-          CMAKE_GENERATOR: Ninja
-        run: |
-          cargo build -p slipstream-client --release --target x86_64-pc-windows-msvc --features openssl/vendored
+        run: cargo build -p slipstream-client --release
       
-      - name: Upload Windows Executable
-        if: success()
+      - name: Build slipstream-server
+        env:
+          PICOQUIC_AUTO_BUILD: 1
+        run: cargo build -p slipstream-server --release
+      
+      - name: Upload Client Binary
         uses: actions/upload-artifact@v4
         with:
-          name: slipstream-client-windows
-          path: target/x86_64-pc-windows-msvc/release/slipstream-client.exe
+          name: slipstream-client-linux
+          path: target/release/slipstream-client
+      
+      - name: Upload Server Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: slipstream-server-linux
+          path: target/release/slipstream-server
