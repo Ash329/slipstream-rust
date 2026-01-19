@@ -9,23 +9,40 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-
+      
+      - name: Setup MSVC Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      
       - name: Install Rust
-        run: rustup update stable
-
+        run: |
+          rustup update stable
+          rustup default stable-x86_64-pc-windows-msvc
+          rustup target add x86_64-pc-windows-msvc
+      
+      - name: Install CMake and Ninja
+        run: |
+          choco install cmake ninja -y
+      
+      - name: Verify Environment
+        run: |
+          cmake --version
+          ninja --version
+          rustc --version --verbose
+          cargo --version
+        
       - name: Build slipstream-client
         env:
-          # Force a 100% 64-bit environment to kill Error 193
           OPENSSL_STATIC: 1
           PICOQUIC_AUTO_BUILD: 1
-          CMAKE_GENERATOR: "Visual Studio 17 2022"
-          CMAKE_GENERATOR_PLATFORM: x64
-        # We use the vendored feature so it doesn't look for OpenSSL on the server
-        run: cargo build -p slipstream-client --release --features openssl/vendored
-
+          CMAKE_GENERATOR: Ninja
+        run: |
+          cargo build -p slipstream-client --release --target x86_64-pc-windows-msvc --features openssl/vendored
+      
       - name: Upload Windows Executable
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: slipstream-client-windows
-          path: target/release/slipstream-client.exe
+          path: target/x86_64-pc-windows-msvc/release/slipstream-client.exe
